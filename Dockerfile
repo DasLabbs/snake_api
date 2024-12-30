@@ -13,8 +13,11 @@ RUN npm install
 # Copy the entire project to the container
 COPY . .
 
+# Build the application (add this line to build your project)
+RUN npm run build
+
 # Expose the application port (adjust if needed)
 EXPOSE 3000
 
-# Default command (can be overridden in docker-compose.yml)
-CMD ["npm", "run", "dev"]
+# Default command (to start the application in production mode)
+CMD ["npm", "run", "start"]
