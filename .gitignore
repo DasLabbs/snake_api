@@ -1,0 +1,10 @@
+node_modules
+.env
+temp.ts
+dist
+build
+test.ts
+logs
+test
+vercel.json
+.vercel
