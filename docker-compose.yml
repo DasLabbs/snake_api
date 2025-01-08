@@ -6,4 +6,6 @@ services:
       context: . # Build from the current directory
     ports:
       - "3000:3000" # Map port 3000 of the container to port 3000 of the host
+    volumes:
+      - .:/usr/src/app # Mount the project directory for live updates
     command: npm run start # Override the CMD in the Dockerfile

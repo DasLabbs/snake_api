@@ -14,7 +14,7 @@ class GamePlayService {
         if (user.lifePoints <= 0)
             throw new BadRequestError("Not enough lifepoint");
 
-        return await this.repository.create(userId);
+        return await this.repository.create(userId, userEmail);
     }
 
     async finishGame(
@@ -43,7 +43,7 @@ class GamePlayService {
     }
 
     async leaderboard() {
-        const players = await userRepository.getLeaderboard();
+        const players = await this.repository.getLeaderBoard();
         return players.map(({ userEmail, highestPoint }) => {
             const [localPart, domain] = userEmail.split("@");
             const hideLength = Math.ceil((2 / 5) * localPart.length);
@@ -60,7 +60,7 @@ class GamePlayService {
     }
 
     async sendRankingReport() {
-        const players = await userRepository.getLeaderboard(50);
+        const players = await this.repository.getLeaderBoard(50);
         await sendMail(players);
     }
 }

@@ -1,164 +1,138 @@
-import firebaseDb from "@domain/db";
-import { UserModel } from "@domain/models/user";
+import userModel from "@domain/models/user";
 import {
     REGEN_TIME,
     Social,
     USER_MAX_LIFEPOINT,
 } from "@shared/constant/config";
-import { getMondayStartOfWeek } from "@shared/helper/date";
 import { BadRequestError } from "@shared/lib/http/httpError";
-import { CollectionReference } from "firebase-admin/firestore";
+import { ObjectType } from "dynamoose/dist/General";
+import { v4 as uuidv4 } from "uuid";
 
 export class UserRepository {
-    constructor(private readonly collection: CollectionReference) {}
+    constructor(private readonly model = userModel) {}
 
     async create(userEmail: string) {
-        const defaultUser: Partial<UserModel> = {
-            userEmail,
-            lifePoints: 6,
-            highestPoint: 0,
-            highestPointUpdateTimestamp: Date.now(),
-            lastRegen: Date.now(),
-            socialLinks: [],
-            adsWatch: 0,
-        };
-
-        const document = await this.collection.add(defaultUser);
-
-        return {
-            id: document.id,
-            ...defaultUser,
-        } as UserModel;
+        return await this.model.create({ userEmail, id: uuidv4() });
     }
 
-    async findByEmail(userEmail: string): Promise<UserModel | null> {
-        const snapshot = await this.collection
-            .where("userEmail", "==", userEmail)
-            .get();
-        if (snapshot.empty) return null;
-        const [user]: UserModel[] = snapshot.docs.map((doc) => {
-            return {
-                id: doc.id,
-                ...doc.data(),
-            } as UserModel;
-        });
+    async findByEmail(userEmail: string) {
+        // Query the user by email
+        const result = await this.model.query("userEmail").eq(userEmail).exec();
 
+        const user = result[0]; // Dynamoose queries return an array
+        if (!user) return null;
+
+        // Update the user's life points if needed
         if (
             user.lastRegen + REGEN_TIME <= Date.now() &&
             user.lifePoints < USER_MAX_LIFEPOINT
         ) {
-            user.lifePoints = Math.min(user.lifePoints + 1, USER_MAX_LIFEPOINT);
+            user.lifePoints = Math.min(USER_MAX_LIFEPOINT, user.lifePoints + 1);
             user.lastRegen += REGEN_TIME;
+
+            // Save the updated user
+            await user.save();
         }
 
         return user;
     }
 
-    async findByUserId(userId: string): Promise<UserModel | null> {
-        const snapshot = await this.collection.doc(userId).get();
-        if (!snapshot.exists) return null;
-        return { id: userId, ...snapshot.data() } as UserModel;
+    async findById(userId: string) {
+        return await this.model.get(userId);
     }
 
     async addSocialLifePoint(userId: string, social: Social) {
-        const snapshot = await this.collection.doc(userId).get();
-        if (!snapshot.exists) throw new BadRequestError("Invalid user");
+        const user = await this.findById(userId);
+        if (!user) throw new BadRequestError("Invalid user");
 
-        const userInfo = snapshot.data() as UserModel;
-        if (userInfo.socialLinks.includes(social))
+        if (user.socialLinks.includes(social))
             throw new BadRequestError("Social already linked");
-
-        userInfo.socialLinks.push(social);
-        userInfo.lastRegen =
-            userInfo.lifePoints + 1 === USER_MAX_LIFEPOINT
+        user.socialLinks.push(social);
+        user.lastRegen =
+            user.lifePoints + 1 === USER_MAX_LIFEPOINT
                 ? Date.now()
-                : userInfo.lastRegen;
-        userInfo.lifePoints = Math.min(
-            userInfo.lifePoints + 1,
-            USER_MAX_LIFEPOINT,
-        );
-
-        await this.collection.doc(userId).update({ ...userInfo });
-    }
-
-    async getLeaderboard(limit: number = 20) {
-        const week = getMondayStartOfWeek();
-        const snapshot = await this.collection
-            .where("highestPointUpdateTimestamp", ">=", week)
-            .orderBy("highestPoint", "desc")
-            .orderBy("highestPointUpdateTimestamp", "asc")
-            .limit(limit)
-            .get();
-        if (snapshot.empty) return [];
-        return snapshot.docs.map((doc) => {
-            const { userEmail, highestPoint } = doc.data() as {
-                userEmail: string;
-                highestPoint: number;
-            };
-            return {
-                userEmail,
-                highestPoint,
-            };
-        });
+                : user.lastRegen;
+        user.lifePoints = Math.min(user.lifePoints + 1, USER_MAX_LIFEPOINT);
+        await user.save();
     }
 
     async updateLifePoints() {
-        this.collection
-            .where("lastRegen", "<=", Date.now() - REGEN_TIME)
-            .get()
-            .then((response) => {
-                const batch = firebaseDb.batch();
-                response.docs.forEach((doc) => {
-                    const docRef = this.collection.doc(doc.id);
-                    const userInfo = doc.data() as UserModel;
-
-                    userInfo.lastRegen =
-                        userInfo.lifePoints + 1 === USER_MAX_LIFEPOINT
-                            ? Date.now()
-                            : userInfo.lastRegen;
-                    userInfo.lifePoints = Math.min(
-                        userInfo.lifePoints + 1,
-                        USER_MAX_LIFEPOINT,
-                    );
-
-                    batch.update(docRef, { ...userInfo });
-                });
-                batch.commit();
+        try {
+            const users = await this.model.scan().exec();
+            const updatePromises = users.map(async (user) => {
+                user.lastRegen =
+                    user.lifePoints + 1 === USER_MAX_LIFEPOINT
+                        ? Date.now()
+                        : user.lastRegen + REGEN_TIME;
+                user.lifePoints = Math.min(
+                    user.lifePoints + 1,
+                    USER_MAX_LIFEPOINT,
+                );
+                return user.save();
             });
+
+            // Wait for all updates to complete
+            await Promise.all(updatePromises);
+        } catch (error) {
+            console.error("Error updating life points:", error);
+        }
     }
 
     async increaseUserLifePoint(userId: string) {
-        const snapshot = await this.collection.doc(userId).get();
-        if (!snapshot.exists) throw new BadRequestError("Invalid user");
+        const user = await this.model.get(userId); // Fetch by primary key
+        if (!user || user.adsWatch >= 3) {
+            throw new BadRequestError("Invalid operation");
+        }
 
-        const userInfo = snapshot.data() as UserModel;
-        if (userInfo.adsWatch >= 3)
-            throw new BadRequestError("Exceed ads watch for today");
-
-        userInfo.lastRegen =
-            userInfo.lifePoints + 1 === USER_MAX_LIFEPOINT
+        user.lastRegen =
+            user.lifePoints + 1 === USER_MAX_LIFEPOINT
                 ? Date.now()
-                : userInfo.lastRegen;
-        userInfo.lifePoints = Math.min(
-            userInfo.lifePoints + 1,
-            USER_MAX_LIFEPOINT,
-        );
-        userInfo.adsWatch += 1;
+                : user.lastRegen;
+        user.lifePoints = Math.min(user.lifePoints + 1, USER_MAX_LIFEPOINT);
+        user.adsWatch += 1;
 
-        await this.collection.doc(userId).update({ ...userInfo });
+        return await user.save(); // Save the updated user back to the database
+    }
+
+    async decreaseUserLifePoint(userId: string) {
+        const user = await this.model.get(userId); // Fetch by primary key
+        if (!user) {
+            throw new BadRequestError("Invalid operation");
+        }
+
+        const { lifePoints, lastRegen } = user;
+        const updateLastRegen =
+            lifePoints === USER_MAX_LIFEPOINT
+                ? Date.now()
+                : lifePoints === 0
+                  ? lastRegen + REGEN_TIME
+                  : lastRegen;
+
+        user.lifePoints = Math.max(lifePoints - 1, 0);
+        user.lastRegen = updateLastRegen;
+
+        await user.save(); // Save the updated user back to the database
+        return user;
     }
 
     async resetAdsWatch() {
-        this.collection.get().then((response) => {
-            const batch = firebaseDb.batch();
-            response.docs.forEach((doc) => {
-                const docRef = this.collection.doc(doc.id);
-                batch.update(docRef, { adsWatch: 0 });
+        let lastKey: ObjectType | undefined;
+
+        do {
+            const users = await this.model
+                .scan()
+                .startAt(lastKey as ObjectType)
+                .exec();
+            const updatePromises = users.map(async (user) => {
+                user.adsWatch = 0;
+                return user.save();
             });
-            batch.commit();
-        });
+
+            await Promise.all(updatePromises);
+            lastKey = users.lastKey;
+        } while (lastKey);
     }
 }
 
-const userRepository = new UserRepository(firebaseDb.collection("user"));
+const userRepository = new UserRepository();
 export default userRepository;

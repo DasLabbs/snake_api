@@ -1,3 +1,4 @@
+import { DynamoDBConfig } from "@domain/db/dynamo";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -11,6 +12,7 @@ interface Config {
     encryptKey: string;
     mailPassword: string;
     mailUserName: string;
+    dbConfig: DynamoDBConfig;
 }
 
 const config: Config = {
@@ -22,6 +24,12 @@ const config: Config = {
     encryptKey: process.env.ENCRYPT_KEY!,
     mailPassword: process.env.EMAIL_PASSWORD!,
     mailUserName: process.env.EMAIL_USERNAME!,
+    dbConfig: {
+        accessKeyId: process.env.DB_ACCESS_KEY_ID!,
+        dbName: process.env.DB_NAME!,
+        region: process.env.DB_REGION!,
+        secretAccessKey: process.env.DB_SECRET_ACCESS_KEY!,
+    },
 };
 
 export default config;

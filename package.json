@@ -7,7 +7,7 @@
     "prepare": "husky",
     "lint-staged": "lint-staged",
     "build": "rimraf dist && tsc && tsc-alias",
-    "start": "yarn run build && node ./dist/index.js",
+    "start": "node ./dist/index.js",
     "vercel": "yarn run build && vercel --prod"
   },
   "keywords": [],
@@ -59,16 +59,18 @@
     "crypto-js": "^4.2.0",
     "csv-writer": "^1.6.0",
     "dotenv": "^16.4.7",
+    "dynamoose": "^4.0.3",
     "express": "^4.21.1",
     "firebase-admin": "^13.0.1",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
+    "mongoose": "^8.9.3",
     "morgan": "^1.10.0",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.16",
     "tslib": "^2.8.1",
-    "uuid": "^11.0.3",
+    "uuid": "^11.0.4",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   }

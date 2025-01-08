@@ -1,3 +1,7 @@
-import firebaseDb from "./fireBase";
+import config from "@config/index";
 
-export default firebaseDb;
+import { DynamoDBConnection } from "./dynamo";
+
+// Initialize the connection
+const dbConnection = DynamoDBConnection.getInstance();
+dbConnection.initialize(config.dbConfig);

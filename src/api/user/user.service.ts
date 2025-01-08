@@ -27,7 +27,14 @@ class UserService {
         if (!user) throw new NotFoundError();
 
         const { lifePoints, id, lastRegen, socialLinks, adsWatch } = user;
-        return { userEmail, lifePoints, id, lastRegen, socialLinks, adsWatch };
+        return {
+            userEmail,
+            lifePoints,
+            _id: id,
+            lastRegen,
+            socialLinks,
+            adsWatch,
+        };
     }
 
     async handleRefreshToken(payload: UserTokenPayload) {
