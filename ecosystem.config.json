@@ -1,0 +1,14 @@
+{
+    "apps": [
+      {
+        "name": "Snake api",
+        "script": "yarn",
+        "args": "run start",
+        "cwd": "./",
+        "instances": 1,
+        "exec_mode": "fork",
+        "restart": "always"
+      }
+    ]
+  }
+  
