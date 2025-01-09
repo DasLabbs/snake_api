@@ -30,7 +30,7 @@ class UserService {
         return {
             userEmail,
             lifePoints,
-            _id: id,
+            id,
             lastRegen,
             socialLinks,
             adsWatch,
