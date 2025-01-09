@@ -16,7 +16,7 @@ const gamePlaySchema = new Schema(
         id: {
             type: String,
             hashKey: true,
-            default: uuidv4(),
+            default: () => uuidv4(),
         },
         point: {
             type: Number,

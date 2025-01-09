@@ -17,7 +17,7 @@ const userSchema = new Schema(
         id: {
             type: String,
             hashKey: true,
-            default: uuidv4(),
+            default: () => uuidv4(),
         },
         userEmail: {
             type: String,
