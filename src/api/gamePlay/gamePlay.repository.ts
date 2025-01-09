@@ -1,6 +1,6 @@
 import userRepository from "@api/user/user.repository";
 import gamePlayModel from "@domain/models/gamePlay";
-import { getMondayStartOfWeek } from "@shared/helper/date";
+import { getFriday6pmOfWeek } from "@shared/helper/date";
 import { BadRequestError } from "@shared/lib/http/httpError";
 
 export class GamePlayRepository {
@@ -33,7 +33,7 @@ export class GamePlayRepository {
         const gamePlays = await this.model
             .scan()
             .where("createdAt")
-            .gt(getMondayStartOfWeek()) // Filter by date
+            .gt(getFriday6pmOfWeek()) // Filter by date
             .where("status")
             .eq("finished") // Filter by status
             .exec(); // Execute scan

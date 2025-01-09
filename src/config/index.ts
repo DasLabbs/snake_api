@@ -13,6 +13,7 @@ interface Config {
     mailPassword: string;
     mailUserName: string;
     dbConfig: DynamoDBConfig;
+    timezone: string;
 }
 
 const config: Config = {
@@ -30,6 +31,7 @@ const config: Config = {
         region: process.env.DB_REGION!,
         secretAccessKey: process.env.DB_SECRET_ACCESS_KEY!,
     },
+    timezone: process.env.TIMEZONE ?? "Etc/UTC",
 };
 
 export default config;
