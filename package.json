@@ -6,7 +6,7 @@
     "dev": "nodemon",
     "prepare": "husky",
     "lint-staged": "lint-staged",
-    "build": "rimraf dist && tsc && tsc-alias",
+    "build": "tsc && tsc-alias",
     "start": "yarn run build && node ./dist/index.js",
     "vercel": "yarn run build && vercel --prod"
   },
