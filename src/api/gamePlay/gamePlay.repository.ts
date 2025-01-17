@@ -28,12 +28,12 @@ export class GamePlayRepository {
         return { gamePlayId, userId, point, lastRegen: updatedUser.lastRegen };
     }
 
-    async getLeaderBoard(limit: number = 20) {
+    async getLeaderBoard(limit: number = 20, last = false) {
         // Step 1: Scan for gamePlays with the given filter
         const gamePlays = await this.model
             .scan()
             .where("createdAt")
-            .gt(getFriday6pmOfWeek()) // Filter by date
+            .gt(getFriday6pmOfWeek(last)) // Filter by date
             .where("status")
             .eq("finished") // Filter by status
             .exec(); // Execute scan

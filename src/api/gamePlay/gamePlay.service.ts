@@ -60,7 +60,7 @@ class GamePlayService {
     }
 
     async sendRankingReport() {
-        const players = await this.repository.getLeaderBoard(50);
+        const players = await this.repository.getLeaderBoard(50, true);
         await sendMail(players);
     }
 }

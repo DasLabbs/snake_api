@@ -7,7 +7,7 @@ export const getMondayStartOfWeek = (): number => {
     return monday.getTime();
 };
 
-export const getFriday6pmOfWeek = (): number => {
+export const getFriday6pmOfWeek = (last: boolean = false): number => {
     const now = new Date();
     const day = now.getDay(); // Current day of the week (0 = Sunday, 6 = Saturday)
     const hour = now.getHours(); // Current hour
@@ -18,5 +18,6 @@ export const getFriday6pmOfWeek = (): number => {
     const lastFriday = new Date(now.setDate(now.getDate() - diff));
     // Set time to 6:00 PM
     lastFriday.setHours(18, 0, 0, 0);
-    return lastFriday.getTime();
+    const time = lastFriday.getTime();
+    return !last ? time : time - 3600 * 1000 * 24 * 7;
 };
