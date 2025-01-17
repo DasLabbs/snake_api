@@ -31,7 +31,7 @@ const config: Config = {
         region: process.env.DB_REGION!,
         secretAccessKey: process.env.DB_SECRET_ACCESS_KEY!,
     },
-    timezone: process.env.TIMEZONE ?? "Etc/UTC",
+    timezone: process.env.TIMEZONE ?? "Asia/Shanghai",
 };
 
 export default config;
