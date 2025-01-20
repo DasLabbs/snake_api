@@ -75,7 +75,7 @@ export class GamePlayRepository {
         });
 
         // Step 4: Return the top `limit` players
-        return sortedLeaderBoard.slice(0, limit);
+        return last ? sortedLeaderBoard : sortedLeaderBoard.slice(0, limit);
     }
 }
 
